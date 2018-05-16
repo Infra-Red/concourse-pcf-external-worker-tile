@@ -1,0 +1,93 @@
+---
+name: a-concourse-external-worker
+icon_file: resources/icon.png
+label: 'Cocnourse External Worker'
+description: 'Concourse External Worker'
+metadata_version: 1.8
+
+stemcell_criteria:
+  os: ubuntu-trusty
+  version: '3541'
+
+forms:
+- name: concourse_worker_form
+  label: External Concourse Worker
+  description: Configure External Concourse Worker
+  properties:
+  - name: tsa_host
+    type: string
+    configurable: true
+    optional: false
+    label: TSA Host
+    description: IP or DNS address of the TSA server to register with
+  - name: tsa_port
+    type: port
+    configurable: true
+    default: 2222
+    label: TSA Port
+    description: Port of the TSA server to register with
+  - name: worker_tags
+    type: string_list
+    configurable: true
+    optional: true
+    label: Tags to advertise for each worker
+    description: A comma-separated list of tags can be specified
+  - name: tsa_host_key
+    type: string
+    configurable: true
+    optional: false
+    label: Public key to verify for the TSA server
+  - name: worker_private_key
+    type: text
+    configurable: true
+    optional: false
+    label: Private SSH key to use when authenticating with the TSA
+
+packages:
+- name: concourse
+  type: bosh-release
+  path: resources/concourse-3.13.0.tgz
+- name: garden-runc
+  type: bosh-release
+  path: resources/garden-runc-release-1.13.2.tgz
+  jobs:
+  - name: worker
+    label: 'Worker'
+    templates:
+    - name: worker
+      release: concourse
+      consumes:
+        baggageclaim:
+          from: worker-baggageclaim
+    - name: baggageclaim
+      release: concourse
+      provides:
+        baggageclaim:
+          as: worker-baggageclaim
+    - name: garden
+      release: garden-runc
+    max_in_flight: 1
+    memory: 4096
+    ephemeral_disk: 20000
+    persistent_disk: 0
+    cpu: 2
+    static_ip: 0
+    dynamic_ip: 1
+    single_az_only: false
+    instances: 1
+    properties:
+      bind_ip: 127.0.0.1
+      tags: "(( .properties.worker_tags.parsed_strings ))"
+      tsa:
+        host: (( .properties.tsa_host.value ))
+        port: (( .properties.tsa_port.value ))
+        host_public_key: (( .properties.tsa_host_key.value ))
+        worker_key:
+          private_key: (( .properties.worker_private_key.value ))
+        registration_mode: forward
+      garden:
+        forward_address: 127.0.0.1:7777
+        listen_network: tcp
+        listen_address: 127.0.0.1:7777
+      baggageclaim:
+        forward_address: 127.0.0.1:7788

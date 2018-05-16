@@ -1,0 +1,8 @@
+*.pivotal
+*.md5
+*.tgz
+*.deb
+*.tar.gz
+product/
+release/
+tile-history.yml
