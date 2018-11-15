@@ -68,7 +68,7 @@ packages:
       release: garden-runc
     max_in_flight: 1
     memory: 4096
-    ephemeral_disk: 20000
+    ephemeral_disk: 50000
     persistent_disk: 0
     cpu: 2
     static_ip: 0
