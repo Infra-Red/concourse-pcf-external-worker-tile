@@ -1,0 +1,20 @@
+---
+platform: linux
+
+image_resource:
+  type: registry-image
+  source:
+    repository: andreikrasnitski/ci
+
+run:
+  path: git-concourse-pcf-external-worker-release/ci/scripts/update-concourse-release.sh
+
+params:
+
+inputs:
+  - name: git-concourse-pcf-external-worker-release
+  - name: garden-runc-release
+  - name: concourse-release
+
+outputs:
+  - name: git-concourse-pcf-external-worker-release-output

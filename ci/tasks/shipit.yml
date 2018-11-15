@@ -1,0 +1,21 @@
+---
+platform: linux
+
+image_resource:
+  type: registry-image
+  source:
+    repository: andreikrasnitski/ci
+
+run:
+  path: git-concourse-pcf-external-worker-release/ci/scripts/shipit.sh
+
+params:
+
+inputs:
+  - name: git-concourse-pcf-external-worker-release-output
+  - name: git-concourse-pcf-external-worker-release
+  - name: concourse-release
+
+outputs:
+  - name: pushme
+  - name: gh

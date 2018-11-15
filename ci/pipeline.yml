@@ -1,0 +1,104 @@
+---
+resource_types:
+- name: slack-notification
+  type: registry-image
+  source:
+    repository: cfcommunity/slack-notification-resource
+    tag: latest
+
+- name: pivnet
+  type: registry-image
+  source:
+    repository: pivotalcf/pivnet-resource
+    tag: latest-final
+
+resources:
+- name: git-concourse-pcf-external-worker-release
+  type: git
+  source:
+    uri: git@github.com:Infra-Red/concourse-pcf-external-worker-tile.git
+    branch: master
+    private_key: ((git-private-key))
+
+- name: slack-alert
+  type: slack-notification
+  source:
+    url: ((build-alert-slack-url))
+
+- name: concourse-release
+  type: bosh-io-release
+  source:
+    repository: concourse/concourse
+
+- name: garden-runc-release
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry/garden-runc-release
+    regexp: 1.16.*
+
+- name: stemcell
+  type: pivnet
+  source:
+    api_token: ((pivnet-token))
+    product_slug: stemcells-ubuntu-xenial
+    product_version: '97.*'
+
+- name: github
+  type: github-release
+  source:
+    user: Infra-Red
+    repository: concourse-pcf-external-worker-tile
+    access_token: ((git-token))
+
+jobs:
+- name: check-and-upgrade-tile
+  plan:
+  - aggregate:
+    - get: git-concourse-pcf-external-worker-release
+    - get: garden-runc-release
+    - get: concourse-release
+      trigger: true
+    - get: stemcell
+      params:
+        globs: ["*aws*"]
+  - task: update-concourse-release
+    file: git-concourse-pcf-external-worker-release/ci/tasks/update-concourse-release.yml
+    on_failure: &on_failure
+      do:
+      - put: slack-alert
+        params:
+          channel: ((build-alert-slack-channel))
+          icon_url: ((build-alert-slack-icon))
+          username: ((build-alert-slack-username))
+          text: |
+            Build Failed. https://ci.altoros.com/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+  - task: deploy-external-worker-tile
+    file: git-concourse-pcf-external-worker-release/ci/tasks/deploy-external-worker-tile.yml
+    params:
+      PCF_URL: ((pcf-opsman-url))
+      PCF_USERNAME: ((pcf-opsman-username))
+      PCF_PASSWORD: ((pcf-opsman-password))
+      PRODUCT_PROPERTIES: ((tile-product-properties))
+      PRODUCT_NETWORK_AZS: ((tile-product-network-azs))
+    on_failure: *on_failure
+  - task: delete-tile
+    file: git-concourse-pcf-external-worker-release/ci/tasks/delete-tile.yml
+    params:
+      PCF_URL: ((pcf-opsman-url))
+      PCF_USERNAME: ((pcf-opsman-username))
+      PCF_PASSWORD: ((pcf-opsman-password))
+    on_failure: *on_failure
+  - task: shipit
+    file: git-concourse-pcf-external-worker-release/ci/tasks/shipit.yml
+    on_failure: *on_failure
+  - name: push-git
+    put: git-concourse-pcf-external-worker-release
+    params:
+      rebase: true
+      repository: pushme/git-concourse-pcf-external-worker-release-output
+  - name: github-release
+    put: github
+    params:
+      name: gh/name
+      tag: gh/tag
+      globs: [gh/artifacts/*]

@@ -1,0 +1,24 @@
+---
+platform: linux
+
+image_resource:
+  type: registry-image
+  source:
+    repository: andreikrasnitski/ci
+
+run:
+  path: git-concourse-pcf-external-worker-release/ci/scripts/deploy-external-worker-tile.sh
+
+params:
+  PCF_URL:
+  PCF_USERNAME:
+  PCF_PASSWORD:
+  PRODUCT_PROPERTIES:
+  PRODUCT_NETWORK_AZS:
+
+inputs:
+  - name: git-concourse-pcf-external-worker-release-output
+  - name: git-concourse-pcf-external-worker-release
+  - name: garden-runc-release
+  - name: concourse-release
+  - name: stemcell
