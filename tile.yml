@@ -46,10 +46,10 @@ forms:
 packages:
 - name: concourse
   type: bosh-release
-  path: resources/concourse-3.13.0.tgz
+  path: resources/concourse-4.2.1.tgz
 - name: garden-runc
   type: bosh-release
-  path: resources/garden-runc-release-1.13.2.tgz
+  path: resources/garden-runc-release-1.16.8.tgz
   jobs:
   - name: worker
     label: 'Worker'
