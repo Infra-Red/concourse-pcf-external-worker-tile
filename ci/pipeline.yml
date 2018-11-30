@@ -34,7 +34,7 @@ resources:
   type: bosh-io-release
   source:
     repository: cloudfoundry/garden-runc-release
-    regexp: 1.16.*
+    regexp: 1.17.*
 
 - name: stemcell
   type: pivnet
